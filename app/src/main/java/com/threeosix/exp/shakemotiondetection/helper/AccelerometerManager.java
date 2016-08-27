@@ -1,4 +1,4 @@
-package com.threeosix.exp.shakemotiondetection;
+package com.threeosix.exp.shakemotiondetection.helper;
 
 /**
  * Created by taufik on 8/26/16.
@@ -10,6 +10,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.widget.Toast;
+
+import com.threeosix.exp.shakemotiondetection.interfaces.AccelerometerListener;
 
 import java.util.List;
 

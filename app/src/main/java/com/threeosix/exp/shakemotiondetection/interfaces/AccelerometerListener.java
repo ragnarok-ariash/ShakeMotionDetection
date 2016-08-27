@@ -1,4 +1,4 @@
-package com.threeosix.exp.shakemotiondetection;
+package com.threeosix.exp.shakemotiondetection.interfaces;
 
 /**
  * Created by taufik on 8/26/16.
