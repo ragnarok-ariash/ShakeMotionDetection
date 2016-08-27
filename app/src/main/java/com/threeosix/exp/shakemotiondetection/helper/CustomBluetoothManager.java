@@ -19,13 +19,13 @@ import java.util.UUID;
 /**
  * Created by taufik on 8/27/16.
  */
-public class BluetoothUtil {
+public class CustomBluetoothManager {
 
-    private static final String TAG = "BluetoothUtil";
+    private static final String TAG = "CustomBluetoothManager";
     private BroadcastReceiver BTCommonReceiver;
     private BluetoothSocket mmSocket;
 
-    public BluetoothUtil(BroadcastReceiver BTCommonReceiver) {
+    public CustomBluetoothManager(BroadcastReceiver BTCommonReceiver) {
         this.BTCommonReceiver = BTCommonReceiver;
     }
 

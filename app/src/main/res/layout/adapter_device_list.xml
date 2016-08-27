@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp">
+    <TextView
+        android:id="@+id/text_device_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Device Name"/>
+    <TextView
+        android:id="@+id/text_device_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Device Info"
+        android:textSize="15sp"
+        android:layout_below="@id/text_device_name"
+        android:layout_marginBottom="10dp"/>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/colorPrimaryDark"
+        android:layout_below="@id/text_device_info"/>
+    <ImageView
+        android:id="@+id/icon_delete_control_device"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:adjustViewBounds="true"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:src="@drawable/ic_delete"/>
+</RelativeLayout>

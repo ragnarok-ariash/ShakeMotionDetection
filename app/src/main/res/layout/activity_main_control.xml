@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+android:orientation="vertical" android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:gravity="center"
+tools:context="com.threeosix.exp.shakemotiondetection.activities.MainControlActivity">
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="100dp"
+        android:layout_marginBottom="5dp"
+        android:src="@drawable/shake_illustration"/>
+
+    <ProgressBar
+        android:id="@+id/progress_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:layout_marginBottom="10dp"
+        android:visibility="invisible"/>
+
+    <TextView
+        android:id="@+id/text_control_mesage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:text="@string/control_message"
+        android:textSize="20sp"
+        android:lineSpacingExtra="5dp"
+        android:gravity="center"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"/>
+
+    <Button
+        android:id="@+id/button_lock_control"
+        android:layout_width="150dp"
+        android:layout_height="60dp"
+        android:text="Lock"
+        android:textSize="20sp"
+        android:background="@color/colorPrimary"
+        android:textColor="@color/white"/>
+</LinearLayout>
