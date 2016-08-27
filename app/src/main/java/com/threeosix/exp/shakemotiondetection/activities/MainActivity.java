@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Timer;
+import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -46,6 +47,11 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
     private BluetoothDevice deviceTryToPair;
     private BluetoothSocket activeSocket;
     private boolean turnOn;
+    private AlertDialog shownDialog;
+
+    private Timer timer = new Timer();
+    private final long DELAY = 1000; // millisecond
+    private boolean canSendMessage;
     @BindView(R.id.message) TextView TVMessage;
 
     private final BroadcastReceiver BTBroadcastReceiver = new BroadcastReceiver() {
@@ -59,6 +65,13 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
                     case BluetoothAdapter.STATE_OFF:
                         //Toast.makeText(context,"BT STATE_OFF",Toast.LENGTH_SHORT).show();
                         setMessageRelatedWithBluetooth(false);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (shownDialog.isShowing())
+                                    shownDialog.dismiss();
+                            }
+                        });
                         break;
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         //Toast.makeText(context,"BT STATE_TURNING_OFF",Toast.LENGTH_SHORT).show();
@@ -66,6 +79,14 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
                     case BluetoothAdapter.STATE_ON:
                         //Toast.makeText(context,"BT STATE_ON",Toast.LENGTH_SHORT).show();
                         setMessageRelatedWithBluetooth(true);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (shownDialog==null || !shownDialog.isShowing())
+                                    checkPairedDevices();
+                            }
+                        });
+
                         break;
                     case BluetoothAdapter.STATE_TURNING_ON:
                         //Toast.makeText(context,"BT STATE_TURNING_ON",Toast.LENGTH_SHORT).show();
@@ -87,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
     private void initialize(){
         //get local/phone's bluetooth device
         turnOn = false;
+        canSendMessage = true;
         BTAdapter = BluetoothAdapter.getDefaultAdapter();
         deviceList = new ArrayList<>();
         newDeviceList = new ArrayList<>();
@@ -114,20 +136,10 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
     }
 
     private void checkPairedDevices() {
+        deviceList.clear();
         Set<BluetoothDevice> pairedDevice = BTAdapter.getBondedDevices();
         if(pairedDevice.size()>0) {
             deviceList.addAll(pairedDevice);
-//            LayoutInflater layoutInflater =
-//                    (LayoutInflater)getBaseContext()
-//                            .getSystemService(LAYOUT_INFLATER_SERVICE);
-//            View popupView = layoutInflater.inflate(R.layout.popup_list, null);
-//            PopupWindow popUp = new PopupWindow(popupView, LinearLayout.LayoutParams.WRAP_CONTENT,
-//                    LinearLayout.LayoutParams.WRAP_CONTENT);
-//            ListView bluetoothLV = (ListView)popupView.findViewById(R.id.list_content);
-//            ArrayAdapter<String> lvAdapter = new ArrayAdapter<String>(this,
-//                    android.R.layout.simple_spinner_item, deviceList);
-//            bluetoothLV.setAdapter(lvAdapter);
-//            popUp.showAtLocation();
         }
         showListPopupDialog();
         //btUtil.startSearching(this,BTAdapter,this);
@@ -138,13 +150,14 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
         LayoutInflater inflater = getLayoutInflater();
         View convertView = (View) inflater.inflate(R.layout.popup_list, null);
         builderSingle.setView(convertView);
-        final AlertDialog dialog = builderSingle.create();
+        shownDialog = builderSingle.create();
+        shownDialog.setCanceledOnTouchOutside(false);
         ListView lv = (ListView) convertView.findViewById(R.id.list_content);
         lv.setAdapter(btListAdapter);
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                dialog.dismiss();
+                shownDialog.dismiss();
                 BluetoothDevice selectedDevice = deviceList.get(position);
                 if (newDeviceList.contains(selectedDevice)) {
                     deviceTryToPair = selectedDevice;
@@ -159,7 +172,7 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
                 }
             }
         });
-        dialog.show();
+        shownDialog.show();
     }
 
     private void setMessageRelatedWithBluetooth(boolean enabled){
@@ -180,21 +193,14 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
     @Override
     public void onShake(float force) {
         // Do your stuff here
+        // reset timer
+        if (canSendMessage){
+            // Called when Motion Detected
+            turnOn = !turnOn;
+            String message = turnOn ? "daya/" : "mati/";
+            sendMessageToBluetooth(message);
+        }
 
-        // Called when Motion Detected
-        Toast.makeText(getBaseContext(), "Motion detected",
-                Toast.LENGTH_SHORT).show();
-        turnOn = !turnOn;
-        String message = turnOn ? "daya/" : "mati/";
-        sendMessageToBluetooth(message);
-//        final Handler handler = new Handler();
-//        handler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                // Do something after 2s = 2000ms
-//                sendMessageToBluetooth("mati\\");
-//            }
-//        }, 2000);
     }
 
     @Override
@@ -290,13 +296,32 @@ public class MainActivity extends AppCompatActivity implements AccelerometerList
     }
 
     private void sendMessageToBluetooth(String message){
-        try {
-            OutputStream outputStream = activeSocket.getOutputStream();
-            outputStream.write(message.getBytes());
-        } catch (IOException e) {
-            Toast.makeText(this, "Unable to send command",Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
+        if (activeSocket!=null){
+            try {
+                Toast.makeText(getBaseContext(), "Motion detected, sending message: "+message,
+                        Toast.LENGTH_SHORT).show();
+                OutputStream outputStream = activeSocket.getOutputStream();
+                outputStream.write(message.getBytes());
+                canSendMessage = false;
+                timer.cancel();
+                timer = new Timer();
+                timer.schedule(
+                        new TimerTask() {
+                            @Override
+                            public void run() {
+                                // TODO: do what you need here (refresh list)
+                                // you will probably need to use runOnUiThread(Runnable action) for some specific actions
+                                canSendMessage = true;
+                            }
+                        },
+                        DELAY
+                );
+            } catch (IOException e) {
+                Toast.makeText(this, "Unable to send command",Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
         }
+
     }
 
 
