@@ -66,7 +66,7 @@ public class MainControlActivity extends AppCompatActivity implements SensorList
     String defaultControlMessage;
 
     private Timer timer = new Timer();
-    private final long DELAY = 1000; // millisecond
+    private final long DELAY = 200; // millisecond
     private final long CALIBRATION_DELAY = 3000; // millisecond
     private final long LOCK_DELAY = 200;
     private final int STORED_DEGREE_LENGTH = 2;
@@ -230,42 +230,43 @@ public class MainControlActivity extends AppCompatActivity implements SensorList
 
     }
 
-//    @OnTouch(R.id.button_lock_control)
-//    public boolean lockSensor(View v, MotionEvent event) {
-////        if (lockHandler == null)
-////            lockHandler = new Handler();
-////        if (lockRunnable == null){
-////            lockRunnable = new Runnable() {
-////                @Override
-////                public void run() {
-////                    progressBar.setVisibility(View.INVISIBLE);
-////                    sensorLocked = true;
-////                   // lockedDegree =
-////                    Toast.makeText(MainControlActivity.this,"now shake your device: "+currentDegree, Toast.LENGTH_SHORT).show();
-////                }
-////            };
-////        }
-////        if (event.getAction() == MotionEvent.ACTION_DOWN){
-////            //have a sec delay to lock position degree
-////            if (progressBar.getVisibility() == View.INVISIBLE && !sensorLocked){
-////                progressBar.setVisibility(View.VISIBLE);
-////                lockHandler.postDelayed(lockRunnable, LOCK_DELAY);
-////            }
-////
-////        }else if (event.getAction() == MotionEvent.ACTION_UP){
-////            progressBar.setVisibility(View.INVISIBLE);
-////            sensorLocked = false;
-////            lockHandler.removeCallbacks(lockRunnable);
-////        }
-//        return true;
-//    }
+    @OnTouch(R.id.button_lock_control)
+    public boolean lockSensor(View v, MotionEvent event) {
+        if (lockHandler == null)
+            lockHandler = new Handler();
+        if (lockRunnable == null){
+            lockRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    progressBar.setVisibility(View.INVISIBLE);
+                    sensorLocked = true;
+                    storedDegree[0] = currentDegree;
+                    getControlDevice();
+                    //Toast.makeText(MainControlActivity.this,"now shake your device: "+currentDegree, Toast.LENGTH_SHORT).show();
+                }
+            };
+        }
+        if (event.getAction() == MotionEvent.ACTION_DOWN){
+            //have a sec delay to lock position degree
+            if (progressBar.getVisibility() == View.INVISIBLE && !sensorLocked){
+                progressBar.setVisibility(View.VISIBLE);
+                lockHandler.postDelayed(lockRunnable, LOCK_DELAY);
+            }
 
-    @OnClick(R.id.button_lock_control)
-    public void onLockControl(){
-        storedDegree[0] = currentDegree;
-        sensorLocked = true;
-        getControlDevice();
+        }else if (event.getAction() == MotionEvent.ACTION_UP){
+            progressBar.setVisibility(View.INVISIBLE);
+            sensorLocked = false;
+            lockHandler.removeCallbacks(lockRunnable);
+        }
+        return true;
     }
+
+//    @OnClick(R.id.button_lock_control)
+//    public void onLockControl(){
+//        storedDegree[0] = currentDegree;
+//        sensorLocked = true;
+//        getControlDevice();
+//    }
 
     private void getControlDevice(){
         toBeControlledDevice = null;
@@ -277,13 +278,14 @@ public class MainControlActivity extends AppCompatActivity implements SensorList
             if (upperBoundDegree > 360)
                 upperBoundDegree = (upperBoundDegree - 360);
 
+            float refDegree = currentDegree;//storedDegree[0]
             if (lowerBoundDegree > upperBoundDegree){
-                if (storedDegree[0] >= lowerBoundDegree || storedDegree[0] <= upperBoundDegree){
+                if (refDegree >= lowerBoundDegree || refDegree <= upperBoundDegree){
                     toBeControlledDevice = device;
                     break;
                 }
             }else{
-                if (storedDegree[0] >= lowerBoundDegree && storedDegree[0] <= upperBoundDegree){
+                if (refDegree >= lowerBoundDegree && refDegree <= upperBoundDegree){
                     toBeControlledDevice = device;
                     break;
                 }
@@ -413,34 +415,38 @@ public class MainControlActivity extends AppCompatActivity implements SensorList
 
     @Override
     public void onShake(float force) {
+        Log.d(TAG,"sensorLocked: "+sensorLocked);
+        Log.d(TAG,"canSendMessage: "+canSendMessage);
         if (canSendMessage && sensorLocked){
             // Called when Shake Detected and Device Position has been locked/determined
 
             if (toBeControlledDevice!=null){
                 if (toBeControlledDevice.getDeviceKind() == DeviceModel.DeviceKind.TOGGLE){
-                    Toast.makeText(this,"Toggling device "+toBeControlledDevice.getDeviceName()+", degree: "+toBeControlledDevice.getDeviceDegree(), Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(this,"Toggling device "+toBeControlledDevice.getDeviceName()+", degree: "+toBeControlledDevice.getDeviceDegree(), Toast.LENGTH_SHORT).show();
                     sendMessageToBluetooth("T" + new DecimalFormat("00").format(Integer.parseInt(toBeControlledDevice.getDevicePin())));
                 }else{
                     //parameterized
+                    float refDegree = currentDegree;//storedDegree[1]
                     float tolerance = 60;
                     float lockedDegree = storedDegree[0];
-                    float shakeDegree = storedDegree[1];
+                    float shakeDegree = refDegree;
                     float diffDegree = currentDegree - lockedDegree;
-                    if (Math.abs(diffDegree) > tolerance){
+                    if (Math.abs(diffDegree) <= tolerance){
+                        Log.d(TAG,"parameter device shall respond ");
                         boolean decrease = false;
                         boolean unsafe = lockedDegree<tolerance;
                         if (unsafe){
+                            Log.d(TAG,"parameter device on unsafe case ");
                             //special case since the left will be higher than pin pointed position
                             if (shakeDegree>lockedDegree)
                                 decrease = true;//shake on left
                         }else{
+                            Log.d(TAG,"parameter device on safe case ");
                             if (shakeDegree < lockedDegree)
                                 decrease = true;//shake on right
                         }
                         int currentValue = SharedPrefsUtils.getIntegerPreference(this,"p_"+toBeControlledDevice.getDevicePin(),0);
-                        sendMessageToBluetooth("P"
-                                + new DecimalFormat("00").format(Integer.parseInt(toBeControlledDevice.getDevicePin()))
-                                + new DecimalFormat("00").format(currentValue));
+
                         if (!decrease)
                             currentValue += PARAMETER_INCREMENT;
                         else {
@@ -453,6 +459,10 @@ public class MainControlActivity extends AppCompatActivity implements SensorList
                             currentValue = 99;
                         if (currentValue < 0)
                             currentValue = 0;
+
+                        sendMessageToBluetooth("P"
+                                + new DecimalFormat("00").format(Integer.parseInt(toBeControlledDevice.getDevicePin()))
+                                + new DecimalFormat("00").format(currentValue));
 
                         SharedPrefsUtils.setIntegerPreference(this,"p_"+toBeControlledDevice.getDevicePin(),currentValue);
                     }
@@ -503,11 +513,10 @@ public class MainControlActivity extends AppCompatActivity implements SensorList
     private void sendMessageToBluetooth(String message){
         if (activeSocket!=null){
             try {
-                Toast.makeText(getBaseContext(), "Motion detected, sending message: "+message,
-                        Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Sending message: " + message);
                 OutputStream outputStream = activeSocket.getOutputStream();
                 outputStream.write(message.getBytes());
-                sensorLocked = false;
+                //sensorLocked = false;
                 canSendMessage = false;
                 timer.cancel();
                 timer = new Timer();
