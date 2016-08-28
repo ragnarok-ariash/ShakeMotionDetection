@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Indoor Device Controller</string>
+    <string name="app_name">Tinggal Tunjuk</string>
     <string name="setup_message">Please point your device in facing up position toward device you want to control. Whenever you think the device already point out the device, please press the SETUP button</string>
     <string name="control_message">Please point your device in facing up position toward device you want to control. To control, please hold LOCK button below, then shake your device</string>
     <string name="pin_hint">Arduino Pin No.</string>

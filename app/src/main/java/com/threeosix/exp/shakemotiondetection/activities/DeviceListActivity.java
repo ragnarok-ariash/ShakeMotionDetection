@@ -25,7 +25,7 @@ import butterknife.OnClick;
  */
 public class DeviceListActivity extends AppCompatActivity {
     public static final int DEVICE_SETUP_CODE = 307;
-    private static final int DEVICE_LIMIT = 4;
+    private static final int DEVICE_LIMIT = 99;
     @BindView(R.id.text_message)TextView tvMessageNoDevice;
     @BindView(R.id.list_view_device)ListView lvDeviceList;
     @BindView(R.id.button_add_new)Button btnAddNeWDevice;
